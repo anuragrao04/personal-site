@@ -1,0 +1,157 @@
+---
+import { getCollection } from "astro:content";
+import Container from "@components/Container.astro";
+import PageLayout from "@layouts/PageLayout.astro";
+import ArrowCard from "@components/ArrowCard.astro";
+import Link from "@components/Link.astro";
+import { dateRange } from "@lib/utils";
+import { SITE, HOME, SOCIALS } from "@consts";
+
+const blog = (await getCollection("blog"))
+  .filter(post => !post.data.draft)
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
+  .slice(0,SITE.NUM_POSTS_ON_HOMEPAGE);
+
+const projects = (await getCollection("projects"))
+  .filter(project => !project.data.draft)
+  .sort((a, b) => b.data.awesomenessScale - a.data.awesomenessScale)
+  .slice(0,SITE.NUM_PROJECTS_ON_HOMEPAGE);
+
+const allwork = (await getCollection("work"))
+  .sort((a, b) => new Date(b.data.dateStart).valueOf() - new Date(a.data.dateStart).valueOf())
+  .slice(0,SITE.NUM_WORKS_ON_HOMEPAGE);
+
+const work = await Promise.all(
+  allwork.map(async (item) => {
+    const { Content } = await item.render();
+    return { ...item, Content };
+  })
+);
+
+---
+
+<PageLayout title={HOME.TITLE} description={HOME.DESCRIPTION}>
+  <Container>
+    <h4 class="animate font-semibold text-black dark:text-white">
+      Hi, I'm Anurag <span class="text-xl">👋🏻</span> 
+    </h4>
+    <div class="space-y-16">
+      <section>
+        <article class="space-y-4">
+        <p class="animate">
+          I love solving problems and building things that actually make a difference! I'm a student at PES University, and I'm always exploring new tech to help me solve interesting problems. Check out my 
+          <Link href="https://github.com/anuragrao04" aria-label="me on Github">
+            GitHub
+          </Link>
+          to see what I've been working on.
+        </p>
+        <p class="animate">
+            I'm currently digging into backend development with Golang, Linux device drivers, and distributed systems. I'm also super fascinated by machine learning that are fundamentally just a bunch of matrix multiplication and calculus but mysteriously become intelligent. 
+        </p>
+        <p class="animate">
+          I've played around with Golang, C, Svelte, React, Kafka, Fluentd, Jenkins, Docker, Python, Javascript, Selenium, Arduino, and other microcontrollers.  If any of that sounds cool to you, definitely hit me up!
+        </p>
+        <p class="animate">
+          When I'm not coding, I'm probably making something fly! My team and I build drones and airplanes and compete in a bunch of competitions. I'm currently leading the Avions Club, where we build some seriously awesome flying machines.  Check out my blog post about our recent adventure at the 
+          <Link href="blog/02-sae-ddc" aria-label="blog about SAE DDC" internal>
+            SAE DDC competition
+          </Link>
+          . It was a damn fun!
+        </p>
+        </article>
+      </section>
+
+      <section class="animate space-y-6">
+        <div class="flex flex-wrap gap-y-2 items-center justify-between">
+          <h5 class="font-semibold text-black dark:text-white">
+            Latest posts
+          </h5>
+          <Link href="/blog">
+            See all posts
+          </Link>
+        </div>
+        <ul class="flex flex-col gap-4">
+          {blog.map(post => (
+            <li>
+              <ArrowCard entry={post} />
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section class="animate space-y-6">
+        <div class="flex flex-wrap gap-y-2 items-center justify-between">
+          <h5 class="font-semibold text-black dark:text-white">
+            Work Experience
+          </h5>
+          <Link href="/work">
+            See all work
+          </Link>
+        </div>
+        <ul class="flex flex-col space-y-4">
+          {work.map(entry => (
+            <li>
+              <div class="text-sm opacity-75">
+                {dateRange(entry.data.dateStart, entry.data.dateEnd)}
+              </div>
+              <div class="font-semibold text-black dark:text-white">
+                {entry.data.company}
+              </div>
+              <div class="text-sm opacity-75">
+                {entry.data.role}
+              </div>
+              <article>
+                <entry.Content />
+              </article>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section class="animate space-y-6">
+        <div class="flex flex-wrap gap-y-2 items-center justify-between">
+          <h5 class="font-semibold text-black dark:text-white">
+            Recent projects
+          </h5>
+          <Link href="/projects">
+            See all projects
+          </Link>
+        </div>
+        <ul class="flex flex-col gap-4">
+          {projects.map(project => (
+            <li>
+              <ArrowCard entry={project} />
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section class="animate space-y-4">
+        <h5 class="font-semibold text-black dark:text-white">
+          Let's Connect
+        </h5>
+        <article>
+          <p>
+            If you want to get in touch with me about something or just to say hi,
+            reach out on social media or send me an email.
+          </p>
+        </article>
+        <ul class="flex flex-wrap gap-2">
+          {SOCIALS.map(SOCIAL => (
+            <li class="flex gap-x-2 text-nowrap">
+              <Link href={SOCIAL.HREF} external aria-label={`${SITE.NAME} on ${SOCIAL.NAME}`}>
+                {SOCIAL.NAME}
+              </Link>
+              {"/"}
+            </li>
+          ))}
+          <li class="line-clamp-1">
+            <Link href={`mailto:${SITE.EMAIL}`} aria-label={`Email ${SITE.NAME}`}>
+              {SITE.EMAIL}
+            </Link>
+          </li>
+        </ul>
+      </section>
+    </div>
+  </Container>
+</PageLayout>
