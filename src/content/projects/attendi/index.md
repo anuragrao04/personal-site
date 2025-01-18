@@ -1,6 +1,6 @@
 ---
 title: "Attendi"
-description: "Dynamic QR Code, The PTP Protocol and Webauthn based secure attendance system for PES University"
+description: "Dynamic QR Code, PTP Protocol and Webauthn based attendance system"
 date: "01 Dec 2024"
 awesomenessScale: 1
 demoURL: "https://attendance.anuragrao.site/"
