@@ -68,7 +68,9 @@ Chromium is more forgiving with RAM. But it's not perfect too. There is an upstr
 
 This also affects electron based apps since electron is just a website + chromium shipped together. This means a few unupdated electron apps are unusable.
 
-The reason this is happening has something to do with `page sizes`. You'd have probably learnt about paging under the Operating Systems course in University. We are talking about those pages here. Apple Silicon Macs have hardware support for 16K page sizes. Most PCs (if not all) have 4K page sizes. So all applications compiled for Apple Silicon not only have to take care of aarch64, but also 16K page sizes.
+The reason this is happening is due to mismatched `page sizes`. Most PCs have 4K page sizes, but the Apple Silicon hardware has support for 16K page sizes. So all applications compiled for Apple Silicon not only have to take care of aarch64, but also 16K page sizes.
+
+This happened with chromium due to [GuardPages being hardcoded to 4K in the source code](https://source.chromium.org/chromium/chromium/src/+/main:v8/src/heap/cppgc/globals.h;l=74;drc=78e40de874ba279549bdcdc06aaddb5fcfe51348). This was fixed in the [this](https://issues.chromium.org/issues/378017037) commit where page sizes were made a run time property. This issue was latent until in [another commit](https://chromium-review.googlesource.com/c/v8/v8/+/5864909) decommits pooled pages by default. This reduced memory usage but there was a inconsistency between `AllocatePageSize()` and `CommitPageSize()` (which was still 4K) and we started having crashes again. A workaround right now until it's all solved and propagated downstream is to pass the flag `--js-flags="--nodecommit_pooled_pages"` while starting anything chromium based.
 
 ### Comms
 
@@ -117,7 +119,7 @@ Not so fast-
 
 #### 2. Games
 
-Running games on linux has been a pain for a long time. This is because most games are written for Windows. Windows has a lot of proprietary APIs that games use, one of them being DirectX. DirectX is a set of APIs that are used to interact with the GPU. This is not available on Linux. We need to translate DirectX calls to Vulkan calls in order to run games made for windows on linux and this is what `DXVK` does. DXVK is a compatibility layer that translates DirectX calls to Vulkan calls. This allows us to run DirectX games on Linux.
+Running games on linux has been a pain for a long time. This is because most games are written for Windows. Windows has a lot of proprietary APIs that games use, one of them being DirectX. It's used for interactions with the GPU. This is not available on Linux. We need to translate DirectX calls to Vulkan calls in order to run games made for windows on linux and this is what `DXVK` does. DXVK is a compatibility layer that translates DirectX calls to Vulkan calls. This allows us to run DirectX games on Linux.
 
 There are more layers of translation. These Apple Silicon macs use 16K page sizes. Most games are compiled with 4K page sizes in mind. To overcome this, we essentially run a microVM that runs a separate Linux Kernel with 4K page sizes.
 
@@ -129,15 +131,15 @@ So, as a summary of the layers of translations involved, games run
 2. Translated from DirectX to Vulkan
 3. Translated from X86_64 to ARM64
 
-I have tested gaming with Euro Truck Sim 2 and American Truck Sim. Both of them miraculously run at the same, if not better frame rate when compared to MacOS. It consumes a massive amount of RAM though. I can't have any other application running beside the game or the game would randomly be killed by OOM Killer (Out of Memory Killer). This happens due to my RAM size of only 8GB. You might observe better behaviour if your Mac has more memory.
+I have tested gaming with Euro Truck Sim 2 and American Truck Sim. Both of them miraculously run at the same, if not better frame rate when compared to MacOS. It consumes a massive amount of RAM though. I can't have any other application running beside the game or the game would randomly be killed by [OOM Killer](https://www.kernel.org/doc/gorman/html/understand/understand016.html). This happens due to my RAM size of only 8GB. You might observe better behaviour if your Mac has more memory.
 
 #### 3. Speakers
 
-Writing a speaker driver is more scary than we think. One wrong move in the driver and the speaker might get overpowerred and damage itself, permanently. With Macs, we also have to write drivers for the DSP. speaker support was merged a couple of months ago by the Asahi Linux team. More info [here](https://github.com/AsahiLinux/docs/wiki/SW:Speakers)
+Writing a speaker driver is more scary than we think. One wrong move in the driver and the speaker might get overpowerred and damage itself, permanently. With Macs, we also have to write drivers for the [DSP](https://en.wikipedia.org/wiki/Digital_signal_processor). speaker support was merged a couple of months ago by the Asahi Linux team. More info [here](https://github.com/AsahiLinux/docs/wiki/SW:Speakers)
 
 #### The Other Things
 
-There are many things that are implemented that we don't notice, but have to be implemented from scratch in the linux kernel. These include: NVMe, PCIe, CPUFreq, Suspend/Sleep, UART, I2C, USB-PD (this is how your mac charges!), SPI and a bunch more. A few notable mentiones that do work are:
+There are many things that are implemented that we don't notice, but have to be implemented from scratch in the linux kernel. These include: NVMe, PCIe, CPUFreq, Suspend/Sleep, UART, I2C ([needed for USB-C port controllers and audio amplifier and the like](https://asahilinux.org/2021/10/progress-report-september-2021/)), USB-PD (this is how your mac charges!), SPI ([needed for touchpad interface](https://asahilinux.org/2021/10/progress-report-september-2021/)) and a bunch more. A few notable mentiones that do work are:
 
 1. Webcam
 2. Keyboard and Display Brightness Control
